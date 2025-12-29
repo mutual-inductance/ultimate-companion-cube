@@ -1,9 +1,14 @@
 # ultimate-companion-cube
-A Raspberry Pi Pico 2-based touch-operated IOT communication lamp.
 
-3d Model: https://makerworld.com/en/models/1991628-portal-companion-cube-lamp-kit 
+A touch-operated IOT communication lamp. 
 
-HBOM: 
-Raspberry Pi Pico 2: https://datasheets.raspberrypi.com/pico/pico-2-datasheet.pdf
-Neopixel Stick - 8x RGBW Natural LED: https://www.adafruit.com/product/2868
-Inland 8266 WIFI Module
+## HBOM: 
+
+- Raspberry Pi Pico 2: https://datasheets.raspberrypi.com/pico/pico-2-datasheet.pdf
+- Neopixel Stick - 8x RGBW Natural LED: https://www.adafruit.com/product/2868
+- Inland 8266 WIFI Module
+- Bit of aluminum or copper foil
+- 3-5x 1 megaOhm resistors 
+- Companion Cube 3d Model: https://makerworld.com/en/models/1991628-portal-companion-cube-lamp-kit 
+
+
