@@ -6,9 +6,8 @@ A touch-operated IOT communication lamp.
 
 - Raspberry Pi Pico 2 W: https://datasheets.raspberrypi.com/picow/pico-2-w-pinout.pdf 
 - Neopixel Stick - 8x RGBW Natural LED: https://www.adafruit.com/product/2868
-- Inland 8266 WIFI Module
 - Bit of aluminum or copper foil
-- 3-5x 1 megaOhm resistors 
+- 3-5x 1 megaOhm resistors (this will vary based on the user and the environment the lamp operates in - I wound up using 3 1 megaohm resistors and a 220 kiloohm resistor)
 - Companion Cube 3d Model: https://makerworld.com/en/models/1991628-portal-companion-cube-lamp-kit 
 
 Guides: 
