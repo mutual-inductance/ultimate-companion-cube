@@ -11,7 +11,7 @@ import ipaddress  # for wifi
 import adafruit_connection_manager
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 from adafruit_io.adafruit_io import IO_MQTT
-
+from rainbowio import colorwheel
 
 wifi_ssid = getenv("CIRCUITPY_WIFI_SSID")
 wifi_password = getenv("CIRCUITPY_WIFI_PASSWORD")
@@ -68,8 +68,30 @@ def message(client, feedid, msg):
         pixels.show()
         time.sleep(5)
     elif msg == "together":
-        rainbow_cycle(speed)
-        time.sleep(5)
+        pixels.fill(ROSE)
+        pixels.show()
+        time.sleep(1)
+        pixels.fill(PURPLE)
+        pixels.show()
+        time.sleep(1)
+        pixels.fill(IRIS)
+        pixels.show()
+        time.sleep(1)
+        pixels.fill(MAGENTA)
+        pixels.show()
+        time.sleep(1)
+        pixels.fill(PINK)
+        pixels.show()
+        time.sleep(1)
+        pixels.fill(FUSCHIA)
+        pixels.show()
+        time.sleep(1)
+        pixels.fill(CORAL)
+        pixels.show()
+        time.sleep(1)
+        pixels.fill(LIGHTRED)
+        pixels.show()
+        time.sleep(1)
     elif msg == "off":
         pixels.fill(WHITE)
         pixels.show()
@@ -160,12 +182,11 @@ while True:
         pixels.show()
         time.sleep(5)
         io.publish('cc0', 'off')
+#        if mqtt_RX.message = here:
 #            io.publish('cc0', 'together')
 #            pixels.fill(BLUE)
 #            pixels.show()
-#            time.sleep(5)
-#        else:
-    
+#            time.sleep(5) 
 
     else:
         pixels.fill(WHITE)
