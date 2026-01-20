@@ -1,0 +1,173 @@
+import board
+import digitalio
+import time
+import touchio  # for capacitive touch sensor
+from adafruit_debouncer import Debouncer  # for capacitive touch sensor
+import neopixel  # for neopixel output
+from os import getenv  # for wifi
+import adafruit_requests
+import wifi
+import ipaddress  # for wifi
+import adafruit_connection_manager
+import adafruit_minimqtt.adafruit_minimqtt as MQTT
+from adafruit_io.adafruit_io import IO_MQTT
+
+
+wifi_ssid = getenv("CIRCUITPY_WIFI_SSID")
+wifi_password = getenv("CIRCUITPY_WIFI_PASSWORD")
+aio_username = getenv("ADAFRUIT_AIO_USERNAME")
+aio_key = getenv("ADAFRUIT_AIO_KEY")
+
+radio = wifi.radio
+while not radio.connected:
+    radio.connect(wifi_ssid, wifi_password)
+
+# get the pool and ssl_context from the helpers:
+pool = adafruit_connection_manager.get_radio_socketpool(radio)
+ssl_context = adafruit_connection_manager.get_radio_ssl_context(radio)
+
+# get request session
+requests = adafruit_requests.Session(pool, ssl_context)
+connection_manager = adafruit_connection_manager.get_connection_manager(pool)
+
+print("My MAC addr:", [hex(i) for i in wifi.radio.mac_address])
+
+#  prints IP address to REPL
+print(f"My IP address is {wifi.radio.ipv4_address}")
+
+#  pings Google
+ipv4 = ipaddress.ip_address("8.8.4.4")
+print("Ping google.com: %f ms" % (wifi.radio.ping(ipv4) * 1000))
+
+# MQTT Setup ###
+
+mqtt_TX = f"{aio_username}/feeds/cc0"
+mqtt_RX = f"{aio_username}/feeds/cc1"
+
+# Define callback methods which are called when events occur
+def connected(client):
+    # This function will be called when the mqtt_client is connected
+    # successfully to the broker.
+    print("Connected to AdafruitIO!")
+    client.subscribe("cc1")
+
+def subscribe(client, userdata, topic, granted_qos):
+    # This method is called when the mqtt_client subscribes to a new feed.
+    print(f"Subscribed to {topic}")
+
+
+def publish(client, userdata, topic, pid):
+    # This method is called when the mqtt_client publishes data to a feed.
+    print(f"Published to {topic}")
+
+
+def message(client, feedid, msg):
+    print(f"New message from {client} on {feedid}: {msg}")
+    if msg == "here":
+        pixels.fill(ROSE)
+        pixels.show()
+        time.sleep(5)
+    elif msg == "together":
+        rainbow_cycle(speed)
+        time.sleep(5)
+    elif msg == "off":
+        pixels.fill(WHITE)
+        pixels.show()
+    else:
+        print(f"Unexpected message on {feedid} feed.")
+
+# Set up a MiniMQTT Client
+mqtt_client = MQTT.MQTT(
+    broker="io.adafruit.com",
+    port=1883,
+    username=aio_username,
+    password=aio_key,
+    socket_pool=pool,
+    ssl_context=ssl_context,
+    )
+    
+io = IO_MQTT(mqtt_client)
+
+# Connect callback handlers to mqtt_client
+io.on_connect = connected
+io.on_subscribe = subscribe
+io.on_publish = publish
+io.on_message = message
+
+print(f"Attempting to connect to {mqtt_client.broker}")
+io.connect()
+
+print(f"Publishing to {mqtt_TX}")
+io.publish('cc0', 'off')
+
+# LIGHTS
+pixel_pin = board.GP6
+num_pixels = 8
+speed = .05
+pixels = neopixel.NeoPixel(
+    pixel_pin, num_pixels, brightness=0.3, auto_write=False, pixel_order=(1, 0, 2, 3)
+)
+
+def color_chase(color, wait):
+    for i in range(num_pixels):
+        pixels[i] = color
+        time.sleep(wait)
+        pixels.show()
+        print(color)
+    time.sleep(0.5)
+
+def rainbow_cycle(wait):
+    for color in range(255):
+        for pixel in range(len(pixels)):
+            pixel_index = (pixel * 256 // len(pixels)) + color * 5
+            pixels[pixel] = colorwheel(pixel_index & 255)
+        pixels.show()
+        time.sleep(wait)
+
+
+WHITE = (255, 255, 255, 255)
+RED = (255, 0, 0, 0)
+YELLOW = (255, 150, 0, 0)
+GREEN = (0, 255, 0, 0)
+CYAN = (0, 255, 255, 0)
+BLUE = (0, 0, 255, 0)
+PURPLE = (180, 0, 255, 0)
+IRIS = (102, 0, 255, 0)
+MAGENTA = (153, 0, 255, 0)
+PINK = (204, 0, 255, 0)
+FUSCHIA = (255, 0, 204, 0)
+CORAL = (255, 0, 153, 0)
+ROSE = (255, 0, 102, 0)
+LIGHTRED = (255, 0, 53, 0)
+
+
+# TOUCHPAD
+touch_pad = touchio.TouchIn(board.GP19, digitalio.Pull.UP)
+touch_deb = Debouncer(touch_pad)
+
+wait_duration = 10
+
+# main loop
+while True:
+    # receive messages from MQTT feed
+    io.loop()
+    # check for touch
+    touch_deb.update()
+    
+    if touch_deb.rose:  # using rose to sense only when someone touches the lamp.
+        io.publish('cc0', 'here')
+        pixels.fill(ROSE)
+        pixels.show()
+        time.sleep(5)
+        io.publish('cc0', 'off')
+#            io.publish('cc0', 'together')
+#            pixels.fill(BLUE)
+#            pixels.show()
+#            time.sleep(5)
+#        else:
+    
+
+    else:
+        pixels.fill(WHITE)
+        pixels.show()
+        time.sleep(.2)
