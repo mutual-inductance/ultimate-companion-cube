@@ -26,7 +26,7 @@ while not radio.connected:
 pool = adafruit_connection_manager.get_radio_socketpool(radio)
 ssl_context = adafruit_connection_manager.get_radio_ssl_context(radio)
 
-# get request session
+# request session
 requests = adafruit_requests.Session(pool, ssl_context)
 connection_manager = adafruit_connection_manager.get_connection_manager(pool)
 
@@ -65,36 +65,19 @@ def message(client, feedid, msg):
     print(f"New message from {client} on {feedid}: {msg}")
     if msg == "here":
         pixels.fill(ROSE)
+        pixels.brightness = .9
         pixels.show()
-        time.sleep(5)
+        for i in range(10):
+            touch_deb.update()        
+            if touch_deb.rose:
+                io.publish('cc0', 'together')
+                lightcycle()
+            else: 
+                time.sleep(.5)
     elif msg == "together":
-        pixels.fill(ROSE)
-        pixels.show()
-        time.sleep(1)
-        pixels.fill(PURPLE)
-        pixels.show()
-        time.sleep(1)
-        pixels.fill(IRIS)
-        pixels.show()
-        time.sleep(1)
-        pixels.fill(MAGENTA)
-        pixels.show()
-        time.sleep(1)
-        pixels.fill(PINK)
-        pixels.show()
-        time.sleep(1)
-        pixels.fill(FUSCHIA)
-        pixels.show()
-        time.sleep(1)
-        pixels.fill(CORAL)
-        pixels.show()
-        time.sleep(1)
-        pixels.fill(LIGHTRED)
-        pixels.show()
-        time.sleep(1)
+        lightcycle()
     elif msg == "off":
-        pixels.fill(WHITE)
-        pixels.show()
+        return 'off'
     else:
         print(f"Unexpected message on {feedid} feed.")
 
@@ -114,7 +97,7 @@ io = IO_MQTT(mqtt_client)
 io.on_connect = connected
 io.on_subscribe = subscribe
 io.on_publish = publish
-io.on_message = message
+io.on_message = message     
 
 print(f"Attempting to connect to {mqtt_client.broker}")
 io.connect()
@@ -127,8 +110,9 @@ pixel_pin = board.GP6
 num_pixels = 8
 speed = .05
 pixels = neopixel.NeoPixel(
-    pixel_pin, num_pixels, brightness=0.3, auto_write=False, pixel_order=(1, 0, 2, 3)
+    pixel_pin, num_pixels, brightness=0.1, auto_write=False, pixel_order=(1, 0, 2, 3)
 )
+
 
 def color_chase(color, wait):
     for i in range(num_pixels):
@@ -140,12 +124,62 @@ def color_chase(color, wait):
 
 def rainbow_cycle(wait):
     for color in range(255):
-        for pixel in range(len(pixels)):
-            pixel_index = (pixel * 256 // len(pixels)) + color * 5
+        for pixel in range(num_pixels):
+            pixel_index = (pixel * 256 // num_pixels) + color
             pixels[pixel] = colorwheel(pixel_index & 255)
         pixels.show()
         time.sleep(wait)
 
+def lightcycle():
+    pixels.brightness = .5
+    pixels.fill(ROSE)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(PURPLE)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(IRIS)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(MAGENTA)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(PINK)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(FUSCHIA)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(CORAL)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(LIGHTRED)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(ROSE)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(PURPLE)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(IRIS)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(MAGENTA)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(PINK)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(FUSCHIA)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(CORAL)
+    pixels.show()
+    time.sleep(.5)
+    pixels.fill(LIGHTRED)
+    pixels.show()
+    time.sleep(.5) 
 
 WHITE = (255, 255, 255, 255)
 RED = (255, 0, 0, 0)
@@ -175,20 +209,15 @@ while True:
     io.loop()
     # check for touch
     touch_deb.update()
-    
     if touch_deb.rose:  # using rose to sense only when someone touches the lamp.
         io.publish('cc0', 'here')
         pixels.fill(ROSE)
+        pixels.brightness = .9
         pixels.show()
-        time.sleep(5)
+        io.loop(5)
         io.publish('cc0', 'off')
-#        if mqtt_RX.message = here:
-#            io.publish('cc0', 'together')
-#            pixels.fill(BLUE)
-#            pixels.show()
-#            time.sleep(5) 
-
     else:
         pixels.fill(WHITE)
+        pixels.brightness = .1
         pixels.show()
         time.sleep(.2)
