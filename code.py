@@ -1,4 +1,4 @@
-import board
+iimport board
 import digitalio
 import time
 import touchio  # for capacitive touch sensor
@@ -12,6 +12,8 @@ import adafruit_connection_manager
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 from adafruit_io.adafruit_io import IO_MQTT
 from rainbowio import colorwheel
+import simpleio
+from adafruit_led_animation.animation.pulse import Pulse
 
 wifi_ssid = getenv("CIRCUITPY_WIFI_SSID")
 wifi_password = getenv("CIRCUITPY_WIFI_PASSWORD")
@@ -41,15 +43,15 @@ print("Ping google.com: %f ms" % (wifi.radio.ping(ipv4) * 1000))
 
 # MQTT Setup ###
 
-mqtt_TX = f"{aio_username}/feeds/cc1"
-mqtt_RX = f"{aio_username}/feeds/cc0"
+mqtt_TX = f"{aio_username}/feeds/cc0"
+mqtt_RX = f"{aio_username}/feeds/cc1"
 
 # Define callback methods which are called when events occur
 def connected(client):
     # This function will be called when the mqtt_client is connected
     # successfully to the broker.
     print("Connected to AdafruitIO!")
-    client.subscribe("cc0")
+    client.subscribe("cc1")
 
 def subscribe(client, userdata, topic, granted_qos):
     # This method is called when the mqtt_client subscribes to a new feed.
@@ -65,14 +67,18 @@ def message(client, feedid, msg):
     print(f"New message from {client} on {feedid}: {msg}")
     if msg == "here":
         pixels.fill(ROSE)
-        pixels.brightness = .8
+        pixels.brightness = .9
         pixels.show()
+        still_alive1()
         for i in range(10):
-            touch_deb.update()        
+            touch_deb.update()
             if touch_deb.rose:
-                io.publish('cc1', 'together')
+                io.publish('cc0', 'together')
+                pixels.fill(LIGHTRED)
+                pixels.show()
+                still_alive2()
                 lightcycle()
-            else: 
+            else:
                 time.sleep(.5)
     elif msg == "together":
         lightcycle()
@@ -90,7 +96,7 @@ mqtt_client = MQTT.MQTT(
     socket_pool=pool,
     ssl_context=ssl_context,
     )
-    
+
 io = IO_MQTT(mqtt_client)
 
 # Connect callback handlers to mqtt_client
@@ -103,28 +109,20 @@ print(f"Attempting to connect to {mqtt_client.broker}")
 io.connect()
 
 print(f"Publishing to {mqtt_TX}")
-io.publish('cc1', 'off')
+io.publish('cc0', 'off')
 
 # LIGHTS
-pixel_pin = board.GP6
+pixel_pin = board.GP0
 num_pixels = 8
 speed = .05
 pixels = neopixel.NeoPixel(
-    pixel_pin, num_pixels, brightness=0.3, auto_write=False, pixel_order=(1, 0, 2, 3)
+    pixel_pin, num_pixels, brightness=0.1, auto_write=False, pixel_order=(1, 0, 2, 3)
 )
-
-def color_chase(color, wait):
-    for i in range(num_pixels):
-        pixels[i] = color
-        time.sleep(wait)
-        pixels.show()
-        print(color)
-    time.sleep(0.5)
 
 def rainbow_cycle(wait):
     for color in range(255):
-        for pixel in range(len(pixels)):
-            pixel_index = (pixel * 256 // len(pixels)) + color * 5
+        for pixel in range(num_pixels):
+            pixel_index = (pixel * 256 // num_pixels) + color
             pixels[pixel] = colorwheel(pixel_index & 255)
         pixels.show()
         time.sleep(wait)
@@ -178,7 +176,7 @@ def lightcycle():
     time.sleep(.5)
     pixels.fill(LIGHTRED)
     pixels.show()
-    time.sleep(.5) 
+    time.sleep(.5)
 
 WHITE = (255, 255, 255, 255)
 RED = (255, 0, 0, 0)
@@ -195,12 +193,53 @@ CORAL = (255, 0, 153, 0)
 ROSE = (255, 0, 102, 0)
 LIGHTRED = (255, 0, 53, 0)
 
+# SOUND
+# Define pin connected to piezo buzzer.
+PIEZO_PIN = board.GP10
+
+# Define a list of tones/music notes to play.
+TONE_FREQ = [ 440,  # A3
+              466,  # A3#
+              523,  # C4
+              554,  # C4#
+              784,  # G5
+              740,  # F5#
+              660,  # E5
+              440,  # A4
+              587   # D5
+              ]
+
+def still_there():
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[0], duration=0.05)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[1], duration=0.4)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[1], duration=0.5)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[2], duration=0.5)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[3], duration=0.7)
+
+def still_alive1():
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[4], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[5], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[6], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[6], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[5], duration=0.5)
+
+def still_alive2():
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[7], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[4], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[5], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[6], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[6], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[5], duration=0.5)
+    time.sleep(.1)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[8], duration=0.5)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[6], duration=0.25)
+    simpleio.tone(PIEZO_PIN, TONE_FREQ[7], duration=0.5)
 
 # TOUCHPAD
-touch_pad = touchio.TouchIn(board.GP19, digitalio.Pull.UP)
+touch_pad = touchio.TouchIn(board.GP21, digitalio.Pull.UP)
 touch_deb = Debouncer(touch_pad)
 
-wait_duration = 10
+# wait_duration = 10
 
 # main loop
 while True:
@@ -209,14 +248,14 @@ while True:
     # check for touch
     touch_deb.update()
     if touch_deb.rose:  # using rose to sense only when someone touches the lamp.
-        io.publish('cc1', 'here')
         pixels.fill(ROSE)
-        pixels.brightness = .8
+        pixels.brightness = .9
         pixels.show()
+        io.publish('cc0', 'here')
         io.loop(5)
-        io.publish('cc1', 'off')
+        io.publish('cc0', 'off')
     else:
         pixels.fill(WHITE)
         pixels.brightness = .1
         pixels.show()
-        time.sleep(.2)
+        time.sleep(.05)
