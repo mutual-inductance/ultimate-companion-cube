@@ -1,4 +1,4 @@
-iimport board
+import board
 import digitalio
 import time
 import touchio  # for capacitive touch sensor
